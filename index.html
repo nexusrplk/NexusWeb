@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeXus Roelplay - Immersive Roleplay Experience</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyan: #8A4BFF;
+            --cyan-dark: #8A4BFF;
+            --cyan-glow: rgba(132, 0, 255, 0.15);
+            --white: #ffffff;
+            --black: #0a0a0a;
+            --dark: #0f0f0f;
+            --darker: #080808;
+            --gray: #1a1a1a;
+            --gray-light: #2a2a2a;
+            --border: rgba(255, 255, 255, 0.06);
+            --text-muted: rgba(255, 255, 255, 0.4);
+            --text-dim: rgba(255, 255, 255, 0.6);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--black);
+            color: var(--white);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Custom Cursor */
+        .cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--cyan);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 99999;
+            transition: transform 0.1s, background 0.2s;
+            mix-blend-mode: difference;
+        }
+
+        .cursor-follower {
+            width: 8px;
+            height: 8px;
+            background: var(--cyan);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 99999;
+            transition: transform 0.3s ease;
+            box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan);
+        }
+
+        .cursor.hover {
+            transform: scale(2);
+            background: rgba(136, 0, 255, 0.1);
+        }
+
+        .cursor-follower.hover {
+            transform: scale(0.5);
+        }
+
+        /* Background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(102, 0, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(102, 0, 255, 0.015) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: -2;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--cyan);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float 15s infinite;
+        }
+
+        @keyframes float {
+            0% { opacity: 0; transform: translateY(100vh) scale(0); }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { opacity: 0; transform: translateY(-100vh) scale(1); }
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1.2rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--white);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .logo-gif {
+            width: 45px;
+            height: 45px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(162, 0, 255, 0.4));
+        }
+
+        .logo span {
+            color: var(--cyan);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 0.6rem 1.2rem;
+            transition: all 0.3s;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--cyan);
+            background: rgba(111, 0, 255, 0.08);
+        }
+
+        /* Page System */
+        .page-container {
+            padding-top: 80px;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ==================== HOME PAGE ==================== */
+        .home-hero {
+            min-height: calc(100vh - 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 5%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .home-hero::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 229, 255, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .home-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            max-width: 1200px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .home-left {
+            text-align: left;
+        }
+
+        .home-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            background: rgba(128, 0, 255, 0.08);
+            border: 1px solid rgba(136, 0, 255, 0.2);
+            border-radius: 20px;
+            color: var(--cyan);
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .home-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--cyan);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .home-left h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+
+        .home-left h1 .highlight {
+            color: var(--cyan);
+            text-shadow: 0 0 30px rgba(111, 0, 255, 0.4);
+        }
+
+        .home-desc {
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            line-height: 1.7;
+            margin-bottom: 2.5rem;
+            max-width: 500px;
+        }
+
+        .home-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .home-server {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1.75rem;
+            max-width: 520px;
+        }
+
+        .home-server p {
+            color: var(--text-dim);
+            font-size: 0.98rem;
+            line-height: 1.6;
+        }
+
+        .home-server strong {
+            color: var(--cyan);
+            font-weight: 700;
+        }
+
+        .home-server-note {
+            color: var(--white);
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            padding: 1rem 2.5rem;
+            background: var(--cyan);
+            color: var(--black);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(123, 0, 255, 0.3);
+        }
+
+        .btn-secondary {
+            padding: 1rem 2.5rem;
+            background: transparent;
+            color: var(--white);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            text-decoration: none;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            background: rgba(76, 0, 255, 0.05);
+        }
+
+        .home-right {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .home-logo-wrap {
+            position: relative;
+            width: 400px;
+            height: 400px;
+        }
+
+        .home-logo-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: relative;
+            z-index: 2;
+            filter: drop-shadow(0 0 40px rgba(85, 0, 255, 0.3));
+        }
+
+        .orbit-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(136, 0, 255, 0.15);
+            border-radius: 50%;
+            animation: orbit 20s linear infinite;
+        }
+
+        .orbit-ring:nth-child(1) {
+            width: 130%;
+            height: 130%;
+        }
+
+        .orbit-ring:nth-child(2) {
+            width: 160%;
+            height: 160%;
+            animation-duration: 30s;
+            animation-direction: reverse;
+            border-color: rgba(98, 0, 255, 0.08);
+        }
+
+        .orbit-ring:nth-child(3) {
+            width: 190%;
+            height: 190%;
+            animation-duration: 25s;
+            border-color: rgba(132, 0, 255, 0.05);
+        }
+
+        @keyframes orbit {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .orbit-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--cyan);
+        }
+
+        .orbit-ring:nth-child(1) .orbit-dot { top: -3px; left: 50%; }
+        .orbit-ring:nth-child(2) .orbit-dot { bottom: -3px; left: 30%; }
+        .orbit-ring:nth-child(3) .orbit-dot { top: 40%; right: -3px; }
+
+        /* Home Stats Bar */
+        .home-stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            border-top: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        .home-stat-item {
+            padding: 2rem;
+            text-align: center;
+            border-right: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .home-stat-item:last-child {
+            border-right: none;
+        }
+
+        .home-stat-item::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--cyan);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .home-stat-item:hover::before {
+            transform: scaleX(1);
+        }
+
+        .home-stat-num {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: var(--cyan);
+            font-weight: 900;
+            margin-bottom: 0.3rem;
+        }
+
+        .home-stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 6rem 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-header h2 span {
+            color: var(--cyan);
+        }
+
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--dark);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan), transparent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s;
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-card:hover {
+            border-color: rgba(119, 0, 255, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(144, 0, 255, 0.08);
+            border: 1px solid rgba(140, 0, 255, 0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--cyan);
+        }
+
+        .feature-card h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* ==================== STAFF PAGE ==================== */
+        .staff-hero {
+            text-align: center;
+            padding: 4rem 5% 2rem;
+        }
+
+        .staff-hero h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .staff-hero h2 span {
+            color: var(--cyan);
+        }
+
+        .staff-hero p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .staff-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 5% 4rem;
+        }
+
+        .staff-tier {
+            margin-bottom: 3rem;
+        }
+
+        .tier-label {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .tier-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--border), transparent);
+        }
+
+        .tier-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: var(--cyan);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .staff-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .staff-card-new {
+            background: var(--dark);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .staff-card-new::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, var(--cyan-glow) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .staff-card-new:hover::after {
+            opacity: 1;
+        }
+
+        .staff-card-new:hover {
+            border-color: rgba(106, 0, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .staff-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(153, 0, 255, 0.2), rgba(0, 229, 255, 0.05));
+            border: 2px solid rgba(132, 0, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--cyan);
+            margin-bottom: 1.2rem;
+        }
+
+        .staff-card-new h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .staff-role-new {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .staff-tag {
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            background: rgba(119, 0, 255, 0.08);
+            border: 1px solid rgba(102, 0, 255, 0.15);
+            border-radius: 20px;
+            color: var(--cyan);
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        /* ==================== RULES PAGE ==================== */
+        .rules-hero {
+            text-align: center;
+            padding: 4rem 5% 2rem;
+        }
+
+        .rules-hero h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .rules-hero h2 span {
+            color: var(--cyan);
+        }
+
+        .rules-hero p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .rules-container-new {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 5% 4rem;
+        }
+
+        .rules-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .rules-tab {
+            padding: 0.6rem 1.5rem;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .rules-tab.active,
+        .rules-tab:hover {
+            color: var(--cyan);
+            border-color: rgba(153, 0, 255, 0.2);
+            background: rgba(0, 229, 255, 0.05);
+        }
+
+        .rule-block {
+            background: var(--dark);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .rule-block:hover {
+            border-color: rgba(115, 0, 255, 0.1);
+        }
+
+        .rule-header {
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .rule-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .rule-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .rule-num {
+            width: 32px;
+            height: 32px;
+            background: rgba(106, 0, 255, 0.1);
+            border: 1px solid rgba(115, 0, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--cyan);
+            font-weight: 700;
+        }
+
+        .rule-title {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .rule-badge {
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .badge-ban {
+            background: rgba(255, 50, 50, 0.1);
+            color: #ff4444;
+            border: 1px solid rgba(255, 50, 50, 0.2);
+        }
+
+        .badge-temp {
+            background: rgba(255, 170, 0, 0.1);
+            color: #ffaa00;
+            border: 1px solid rgba(255, 170, 0, 0.2);
+        }
+
+        .badge-warn {
+            background: rgba(0, 229, 255, 0.1);
+            color: var(--cyan);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+        }
+
+        .rule-desc {
+            padding: 0 1.5rem 1.2rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* ==================== WHITELIST PAGE ==================== */
+        .wl-hero {
+            text-align: center;
+            padding: 4rem 5% 2rem;
+        }
+
+        .wl-hero h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .wl-hero h2 span {
+            color: var(--cyan);
+        }
+
+        .wl-hero p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .wl-container {
+            max-width: 1400px;
+            width: 95%;
+            margin: 0 auto;
+            padding: 2rem 5% 4rem;
+        }
+
+        .wl-progress {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .wl-progress::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: var(--border);
+            z-index: 0;
+        }
+
+        .wl-progress-bar {
+            position: absolute;
+            top: 15px;
+            left: 10%;
+            width: 50%;
+            height: 2px;
+            background: var(--cyan);
+            z-index: 0;
+            transition: width 0.5s;
+        }
+
+        .wl-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .wl-step-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--dark);
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            transition: all 0.3s;
+        }
+
+        .wl-step.active .wl-step-dot {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            box-shadow: 0 0 15px rgba(102, 0, 255, 0.3);
+        }
+
+        .wl-step.done .wl-step-dot {
+            background: var(--cyan);
+            border-color: var(--cyan);
+            color: var(--black);
+        }
+
+        .wl-step-label {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .wl-step.active .wl-step-label {
+            color: var(--cyan);
+        }
+
+        .wl-form-wrap {
+             background: var(--dark);
+             border: 1px solid var(--border);
+             border-radius: 20px;
+             padding: 3.5rem;   /* MORE SPACE */
+        }
+
+        .wl-section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .wl-section:last-of-type {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .wl-sec-head {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .wl-sec-num {
+            width: 28px;
+            height: 28px;
+            background: rgba(81, 0, 255, 0.1);
+            border: 1px solid rgba(76, 0, 255, 0.2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            color: var(--cyan);
+            font-weight: 700;
+        }
+
+        .wl-sec-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.95rem;
+        }
+
+        .wl-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 2rem;   /* more space */
+        }
+
+        .wl-field {
+            margin-bottom: 0;
+        }
+
+        .wl-field.full {
+            grid-column: 1 / -1;
+        }
+
+        .wl-field label {
+            display: block;
+            margin-bottom: 0.4rem;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .wl-field input,
+        .wl-field textarea,
+        .wl-field select {
+            width: 100%;
+            padding: 1.2rem;   /* bigger */
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            color: var(--white);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .wl-field input:focus,
+        .wl-field textarea:focus,
+        .wl-field select:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.08);
+        }
+
+        .wl-field textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .wl-hint {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 0.3rem;
+        }
+
+        .wl-check {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            padding: 1.2rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .wl-check input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--cyan);
+            margin-top: 0.1rem;
+        }
+
+        .wl-check label {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .wl-check label strong {
+            color: var(--white);
+        }
+
+        .wl-submit {
+            width: 100%;
+            padding: 1.2rem;
+            background: var(--cyan);
+            color: var(--black);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1rem;
+            border: none;
+            border-radius: 10px;
+            margin-top: 1rem;
+            transition: all 0.3s;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wl-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(81, 0, 255, 0.3);
+        }
+
+        .wl-submit:active {
+            transform: translateY(0);
+        }
+
+        /* ==================== SUCCESS PAGE ==================== */
+        .success-page {
+            display: none;
+            min-height: calc(100vh - 80px);
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .success-page.active {
+            display: flex;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .success-card {
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            padding: 3rem;
+            background: var(--dark);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .success-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--cyan), var(--white), var(--cyan));
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(93, 0, 255, 0.1);
+            border: 2px solid rgba(119, 0, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+            font-size: 2.5rem;
+            color: var(--cyan);
+            animation: successPop 0.5s ease;
+        }
+
+        @keyframes successPop {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .success-card h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .success-card h2 span {
+            color: var(--cyan);
+        }
+
+        .success-card > p {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .success-details {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .success-detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .success-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .success-detail-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .success-detail-value {
+            color: var(--white);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .success-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            background: rgba(98, 0, 255, 0.1);
+            border: 1px solid rgba(102, 0, 255, 0.2);
+            border-radius: 20px;
+            color: var(--cyan);
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .success-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--cyan);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .success-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2.5rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .social-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 0.5rem 1.2rem;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--cyan);
+            border-color: var(--cyan);
+            background: rgba(0, 229, 255, 0.05);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .home-content { grid-template-columns: 1fr; text-align: center; }
+            .home-left { text-align: center; }
+            .home-desc { margin: 0 auto 2rem; }
+            .home-buttons { justify-content: center; }
+            .home-logo-wrap { width: 280px; height: 280px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .home-stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .wl-grid { grid-template-columns: 1fr; }
+            .rules-tabs { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="cursor" id="cursor"></div>
+    <div class="cursor-follower" id="cursor-follower"></div>
+
+    <div class="loader" id="loader">
+        <div class="loader-content">
+            <div class="loader-bar">
+                <div class="loader-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-grid"></div>
+    <div class="particles" id="particles"></div>
+
+    <nav>
+        <a href="#" class="logo" onclick="showPage('home')">
+            <img src="Nexuslogo.png" alt="NeXus Roleplay" class="logo-gif">
+            NeXus<span>RolePlay</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#" class="active" onclick="showPage('home')" data-page="home">Home</a></li>
+            <li><a href="#" onclick="showPage('staff')" data-page="staff">Staff</a></li>
+            <li><a href="#" onclick="showPage('rules')" data-page="rules">Rules</a></li>
+            <li><a href="#" onclick="showPage('whitelist')" data-page="whitelist">Whitelist</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-container">
+        <!-- HOME PAGE -->
+        <div class="page active" id="home">
+            <div class="home-hero">
+                <div class="home-content">
+                    <div class="home-left">
+                        <div class="home-badge">SERVER ONLINE</div>
+                        <h1>EXTREMELY <br><span class="highlight">NeXus</span></h1>
+                        <p class="home-desc">where every choice shapes your story and every moment becomes part of something bigger. Step into a world filled with limitless possibilities. Whether you’re building your empire, forging alliances, or carving your own path through chaos, Nexus is your playground. Here, creativity thrives, stories collide, and legends are born.</p>
+                        <div class="home-buttons">
+                            <a href="#" class="btn-primary" onclick="showPage('whitelist')">APPLY NOW</a>
+                            <a href="#" class="btn-secondary" onclick="showPage('rules')">READ RULES</a>
+                        </div>
+                        <div class="home-server">
+                            <p>Server IP: <strong>Coming Soon</strong></p>
+                            <p class="home-server-note">Already on the server? Use the site to complete your whitelist and stay up to date.</p>
+                        </div>
+                    </div>
+                    <div class="home-right">
+                        <div class="home-logo-wrap">
+                            <div class="orbit-ring"><div class="orbit-dot"></div></div>
+                            <div class="orbit-ring"><div class="orbit-dot"></div></div>
+                            <div class="orbit-ring"><div class="orbit-dot"></div></div>
+                            <img src="Nexuslogo.png" alt="FeonaRP Logo">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="home-stats-bar">
+                <div class="home-stat-item">
+                    <div class="home-stat-num" id="playerCount">0</div>
+                    <div class="home-stat-label">Players Online</div>
+                </div>
+                <div class="home-stat-item">
+                    <div class="home-stat-num">24/7</div>
+                    <div class="home-stat-label">Support</div>
+                </div>
+                <div class="home-stat-item">
+                    <div class="home-stat-num">50+</div>
+                    <div class="home-stat-label">Custom mlos</div>
+                </div>
+                <div class="home-stat-item">
+                    <div class="home-stat-num">100%</div>
+                    <div class="home-stat-label">Stability</div>
+                </div>
+            </div>
+            <div class="features-section">
+                <div class="section-header">
+                    <h2>What WE <span>OFFER</span>!<!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Document</title>
+                    </head>
+                    <body>
+                        
+                    </body>
+                    </html></h2>
+                    <p>Experience roleplay like never before with our premium features</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎭</div>
+                        <h3>Serious RP</h3>
+                        <p>Immersive roleplay with strict rules ensuring high-quality interactions and realistic scenarios.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💼</div>
+                        <h3>Custom Jobs</h3>
+                        <p>Over 50 unique careers from law enforcement to criminal enterprises, each with progression systems.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🏠</div>
+                        <h3>Property System</h3>
+                        <p>Buy, sell, and customize properties. Own businesses, warehouses, and luxury apartments.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🚗</div>
+                        <h3>Vehicle Economy</h3>
+                        <p>Realistic vehicle market with imports, modifications, and a thriving second-hand economy.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚖️</div>
+                        <h3>Legal System</h3>
+                        <p>Working courts, lawyers, and a judicial system that impacts your character's record.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌟</div>
+                        <h3>Active Events</h3>
+                        <p>Weekly server events, storylines, and community gatherings hosted by our event team.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STAFF PAGE -->
+        <div class="page" id="staff">
+            <div class="staff-hero">
+                <h2>OUR <span>TEAM</span></h2>
+                <p>NeXus Roleplay Server Staff</p>
+            </div>
+            <div class="staff-container">
+                <div class="staff-tier">
+                    <div class="tier-label">
+                        <span class="tier-name">NEXUS FOUNDER</span>
+                        <div class="tier-line"></div>
+                    </div>
+                    <div class="staff-row">
+                        <div class="staff-card-new">
+                            <div class="staff-avatar">S</div>
+                            <h3>SYNTAX | ᶠᴼᵁᴺᴰᴱᴿ</h3>
+                            <div class="staff-role-new">Founder Of The NeXus Roleplay</div>
+                            <span class="staff-tag">FOUNDER</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="staff-tier">
+                    <div class="tier-label">
+                        <span class="tier-name">SENIOR NEXUS TEAM</span>
+                        <div class="tier-line"></div>
+                    </div>
+                    <div class="staff-row">
+                        <div class="staff-card-new">
+                            <div class="staff-avatar">J</div>
+                            <h3>JANIYA | ᵀᴱᴬᴹ</h3>
+                            <div class="staff-role-new">Our Nexus Supporter Team</div>
+                            <span class="staff-tag">NEXUS TEAM</span>
+                        </div>
+                        <div class="staff-card-new">
+                            <div class="staff-avatar">I</div>
+                            <h3>IKSUKA | ᵀᴱᴬᴹ</h3>
+                            <div class="staff-role-new">Our Nexus Supporter Team</div>
+                            <span class="staff-tag">NEXUS TEAM</span>
+                        </div>
+                        <div class="staff-card-new">
+                            <div class="staff-avatar">D</div>
+                            <h3>DAEMON | ᵀᴱᴬᴹ</h3>
+                            <div class="staff-role-new">Our Nexus Supporter Team</div>
+                            <span class="staff-tag">NEXUS TEAM</span>
+                        </div>
+                        <div class="staff-card-new">
+                            <div class="staff-avatar">D</div>
+                            <h3>DULA | ᵀᴱᴬᴹ</h3>
+                            <div class="staff-role-new">Our Nexus Supporter Team</div>
+                            <span class="staff-tag">NEXUS TEAM</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="staff-tier">
+                    <div class="tier-label">
+                        <span class="tier-name">JUNIOR NEXUS Team</span>
+                        <div class="tier-line"></div>
+                    </div>
+                    <div class="staff-row">
+                        <div class="staff-card-new">
+                            <div class="staff-avatar">M</div>
+                            <h3>MOONBOY | ᵀᴱᴬᴹ</h3>
+                            <div class="staff-role-new">Our Nexus Supporter Team</div>
+                            <span class="staff-tag">NEXUS TEAM</span>
+                        </div>
+                        <div class="staff-card-new">
+                            <div class="staff-avatar">L</div>
+                            <h3>LAKIYA | ᵀᴱᴬᴹ</h3>
+                            <div class="staff-role-new">Our Nexus Supporter Team</div>
+                            <span class="staff-tag">NEXUS TEAM</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RULES PAGE -->
+        <div class="page" id="rules">
+            <div class="rules-hero">
+                <h2>SERVER <span>RULES</span></h2>
+                <p>Read carefully. Ignorance is not an excuse.</p>
+            </div>
+            <div class="rules-container-new">
+                <div class="rules-tabs">
+                    <button class="rules-tab active" onclick="filterRules('all', this)">All Rules</button>
+                    <button class="rules-tab" onclick="filterRules('conduct', this)">Conduct</button>
+                    <button class="rules-tab" onclick="filterRules('rp', this)">Roleplay</button>
+                    <button class="rules-tab" onclick="filterRules('integrity', this)">Integrity</button>
+                </div>
+
+                <div id="rules-list">
+                    <div class="rule-block" data-category="conduct">
+                        <div class="rule-header">
+                            <div class="rule-title-wrap">
+                                <div class="rule-num">1.1</div>
+                                <div class="rule-title">Respect All Players - සියලුම ක්‍රීඩකයින්ට ගරු කරන්න</div>
+                            </div>
+                            <span class="rule-badge badge-ban">Ban</span>
+                        </div>
+                        <div class="rule-desc">Harassment, hate speech, discrimination, or toxicity of any kind will result in immediate permanent removal. Treat everyone with respect.</div>
+                    </div>
+
+                    <div class="rule-block" data-category="rp">
+                        <div class="rule-header">
+                            <div class="rule-title-wrap">
+                                <div class="rule-num">2.1</div>
+                                <div class="rule-title">No Metagaming - Metagaming නැත</div>
+                            </div>
+                            <span class="rule-badge badge-ban">Ban</span>
+                        </div>
+                        <div class="rule-desc">Using information obtained outside of your character's knowledge is strictly forbidden. This includes stream sniping, Discord calls during RP, or using OOC info IC.</div>
+                    </div>
+
+                    <div class="rule-block" data-category="rp">
+                        <div class="rule-header">
+                            <div class="rule-title-wrap">
+                                <div class="rule-num">2.2</div>
+                                <div class="rule-title">No Powergaming - Powergaming නැත</div>
+                            </div>
+                            <span class="rule-badge badge-temp">Temp Ban</span>
+                        </div>
+                        <div class="rule-desc">You must give other players a chance to react to your actions. Forcing outcomes without allowing counterplay ruins the experience for everyone.</div>
+                    </div>
+
+                    <div class="rule-block" data-category="conduct">
+                        <div class="rule-header">
+                            <div class="rule-title-wrap">
+                                <div class="rule-num">1.2</div>
+                                <div class="rule-title">Stay In Character - චරිතය තුළ රැඳී සිටින්න</div>
+                            </div>
+                            <span class="rule-badge badge-warn">Warn</span>
+                        </div>
+                        <div class="rule-desc">Breaking character during active roleplay is not allowed. Use designated OOC channels for out-of-character communication only.</div>
+                    </div>
+
+                    <div class="rule-block" data-category="rp">
+                        <div class="rule-header">
+                            <div class="rule-title-wrap">
+                                <div class="rule-num">2.3</div>
+                                <div class="rule-title">Fear RP Mandatory - බිය RP අනිවාර්යය</div>
+                            </div>
+                            <span class="rule-badge badge-temp">Temp Ban</span>
+                        </div>
+                        <div class="rule-desc">Your character must react realistically to threats. If someone points a gun at you, act like your life is in danger. No hero complexes.</div>
+                    </div>
+
+                    <div class="rule-block" data-category="rp">
+                        <div class="rule-header">
+                            <div class="rule-title-wrap">
+                                <div class="rule-num">2.4</div>
+                                <div class="rule-title">No Random Deathmatch - අහඹු මරණයක් නැත</div>
+                            </div>
+                            <span class="rule-badge badge-ban">Ban</span>
+                        </div>
+                        <div class="rule-desc">Killing or attacking players without valid in-character reason is prohibited. Build up to conflict through RP, not violence.</div>
+                    </div>
+
+                    <div class="rule-block" data-category="integrity">
+                        <div class="rule-header">
+                            <div class="rule-title-wrap">
+                                <div class="rule-num">3.1</div>
+                                <div class="rule-title">No Exploits - සූරාකෑම් නැත</div>
+                            </div>
+                            <span class="rule-badge badge-ban">Ban</span>
+                        </div>
+                        <div class="rule-desc">Using bugs, glitches, or unintended mechanics for advantage is forbidden. Report exploits to staff for rewards instead of abusing them.</div>
+                    </div>
+
+                    <div class="rule-block" data-category="integrity">
+                        <div class="rule-header">
+                            <div class="rule-title-wrap">
+                                <div class="rule-num">3.2</div>
+                                <div class="rule-title">No Third-Party Tools - තෙවන පාර්ශවීය මෙවලම් නැත</div>
+                            </div>
+                            <span class="rule-badge badge-ban">Perm Ban</span>
+                        </div>
+                        <div class="rule-desc">Cheats, mods, injectors, or any external software that gives advantage results in immediate permanent ban with no appeal.</div>
+                    </div>
+
+                    <div class="rule-block" data-category="rp">
+                        <div class="rule-header">
+                            <div class="rule-title-wrap">
+                                <div class="rule-num">2.5</div>
+                                <div class="rule-title">New Life Rule - නව ජීවන රීතිය</div>
+                            </div>
+                            <span class="rule-badge badge-warn">Warn</span>
+                        </div>
+                        <div class="rule-desc">After respawning, you forget the events leading to your death. You cannot return to the scene or seek revenge for your previous life.</div>
+                    </div>
+
+                    <div class="rule-block" data-category="rp">
+                        <div class="rule-header">
+                            <div class="rule-title-wrap">
+                                <div class="rule-num">2.6</div>
+                                <div class="rule-title">Combat Logging - සටන් ලොග් කිරීම</div>
+                            </div>
+                            <span class="rule-badge badge-ban">Ban</span>
+                        </div>
+                        <div class="rule-desc">Disconnecting during or immediately after hostile RP to avoid consequences is prohibited. Wait 15 minutes after any combat before logging.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WHITELIST PAGE -->
+        <div class="page" id="whitelist">
+            <div class="wl-hero">
+                <h2>WHITELIST <span>APPLICATION</span></h2>
+                <p>Join our community. Tell us your story.</p>
+            </div>
+            <div class="wl-container">
+                <div class="wl-progress">
+                    <div class="wl-progress-bar" id="wlProgress"></div>
+                    <div class="wl-step done">
+                        <div class="wl-step-dot">✓</div>
+                        <div class="wl-step-label">Read Rules</div>
+                    </div>
+                    <div class="wl-step active">
+                        <div class="wl-step-dot">2</div>
+                        <div class="wl-step-label">Apply</div>
+                    </div>
+                    <div class="wl-step">
+                        <div class="wl-step-dot">3</div>
+                        <div class="wl-step-label">Review</div>
+                    </div>
+                    <div class="wl-step">
+                        <div class="wl-step-dot">4</div>
+                        <div class="wl-step-label">Result</div>
+                    </div>
+                </div>
+
+                <div class="wl-form-wrap">
+                    <form id="wlForm" onsubmit="handleSubmit(event)">
+                        <div class="wl-section">
+                            <div class="wl-sec-head">
+                                <div class="wl-sec-num">01</div>
+                                <div class="wl-sec-title">ACCOUNT INFO</div>
+                            </div>
+                            <div class="wl-grid">
+                                <div class="wl-field">
+                                    <label>Discord</label>
+                                    <input type="text" placeholder="username#0000" required>
+                                </div>
+                                <div class="wl-field">
+                                    <label>Steam URL</label>
+                                    <input type="url" placeholder="steamcommunity.com/id/..." required>
+                                </div>
+                                <div class="wl-field">
+                                    <label>Age</label>
+                                    <input type="number" min="16" max="99" placeholder="18" required>
+                                </div>
+                                <div class="wl-field">
+                                    <label>Experience</label>
+                                    <select required>
+                                        <option value="">Select...</option>
+                                        <option value="none">None</option>
+                                        <option value="beginner">Beginner</option>
+                                        <option value="intermediate">Intermediate</option>
+                                        <option value="advanced">Advanced</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="wl-section">
+                            <div class="wl-sec-head">
+                                <div class="wl-sec-num">02</div>
+                                <div class="wl-sec-title">CHARACTER</div>
+                            </div>
+                            <div class="wl-grid">
+                                <div class="wl-field full">
+                                    <label>Full Name</label>
+                                    <input type="text" placeholder="Character first and last name" required>
+                                </div>
+                                <div class="wl-field full">
+                                    <label>Backstory</label>
+                                    <textarea placeholder="Who is your character? Where did they come from? What drives them? Minimum 200 characters." required></textarea>
+                                    <div class="wl-hint">Be detailed and creative. This is the most important part.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="wl-section">
+                            <div class="wl-sec-head">
+                                <div class="wl-sec-num">03</div>
+                                <div class="wl-sec-title">ROLEPLAY TEST</div>
+                            </div>
+                            <div class="wl-grid">
+                                <div class="wl-field full">
+                                    <label>Scenario Response</label>
+                                    <textarea placeholder="You witness a store robbery. Two masked men, one hostage. What does your character do?" required></textarea>
+                                </div>
+                                <div class="wl-field full">
+                                    <label>Rules Check</label>
+                                    <textarea placeholder="Explain metagaming and powergaming in your own words. Why are these rules important?" required></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="wl-check">
+                            <input type="checkbox" id="agree" required>
+                            <label for="agree">I have read and agree to follow all <strong>server rules</strong>. I understand that breaking rules may result in permanent ban without appeal.</label>
+                        </div>
+
+                        <button type="submit" class="wl-submit">SUBMIT APPLICATION</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUCCESS PAGE -->
+        <div class="success-page" id="successPage">
+            <div class="success-card">
+                <div class="success-icon">✓</div>
+                <h2>APPLICATION <span>SUBMITTED</span></h2>
+                <p>Your whitelist application has been received and is now under review by our staff team.</p>
+
+                <div class="success-details">
+                    <div class="success-detail-row">
+                        <span class="success-detail-label">Application ID</span>
+                        <span class="success-detail-value" id="appId">#WL-78432</span>
+                    </div>
+                    <div class="success-detail-row">
+                        <span class="success-detail-label">Submitted</span>
+                        <span class="success-detail-value" id="appDate">Just now</span>
+                    </div>
+                    <div class="success-detail-row">
+                        <span class="success-detail-label">Est. Response</span>
+                        <span class="success-detail-value">24-48 Hours</span>
+                    </div>
+                    <div class="success-detail-row">
+                        <span class="success-detail-label">Status</span>
+                        <span class="success-detail-value"><span class="success-status">Under Review</span></span>
+                    </div>
+                </div>
+
+                <div class="success-buttons">
+                    <a href="#" class="btn-primary" onclick="showPage('home')">BACK TO HOME</a>
+                    <a href="#" class="btn-secondary" onclick="showPage('rules')">READ RULES</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="social-links">
+            <a href="https://discord.gg/6xxh27Renq">Discord</a>
+            <a href="https://www.tiktok.com/@nexuslkrp">TikTok</a>
+            <a href="https://www.youtube.com/@NexusLkRp">YouTube</a>
+            <a href="https://www.instagram.com/nexusrplk/">Instagram</a>
+            <a href="https://web.facebook.com/?_rdc=1&_rdr#">FaceBook</a>
+        </div>
+        <p>&copy; 2026 NexusRP. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Custom Cursor
+        const cursor = document.getElementById('cursor');
+        const cursorFollower = document.getElementById('cursor-follower');
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX - 10 + 'px';
+            cursor.style.top = e.clientY - 10 + 'px';
+            setTimeout(() => {
+                cursorFollower.style.left = e.clientX - 4 + 'px';
+                cursorFollower.style.top = e.clientY - 4 + 'px';
+            }, 100);
+        });
+
+        document.querySelectorAll('a, button, input, textarea, select, .staff-card-new, .feature-card, .rule-block, .home-stat-item').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                cursor.classList.add('hover');
+                cursorFollower.classList.add('hover');
+            });
+            el.addEventListener('mouseleave', () => {
+                cursor.classList.remove('hover');
+                cursorFollower.classList.remove('hover');
+            });
+        });
+
+        // Particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 40; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 15 + 's';
+                p.style.animationDuration = (Math.random() * 10 + 15) + 's';
+                container.appendChild(p);
+            }
+        }
+
+        // Navigation
+        function showPage(pageName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageName).classList.add('active');
+            document.querySelectorAll('.nav-links a').forEach(a => {
+                a.classList.remove('active');
+                if (a.dataset.page === pageName) a.classList.add('active');
+            });
+            document.getElementById('successPage').classList.remove('active');
+            window.scrollTo(0, 0);
+        }
+
+        // Rules Filter
+        function filterRules(category, btn) {
+            document.querySelectorAll('.rules-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+
+            document.querySelectorAll('.rule-block').forEach(block => {
+                if (category === 'all' || block.dataset.category === category) {
+                    block.style.display = 'block';
+                    block.style.animation = 'fadeIn 0.4s ease';
+                } else {
+                    block.style.display = 'none';
+                }
+            });
+        }
+
+        // Form Submit
+        function handleSubmit(e) {
+            e.preventDefault();
+
+            // Generate random app ID
+            const id = '#WL-' + Math.floor(10000 + Math.random() * 90000);
+            document.getElementById('appId').textContent = id;
+            document.getElementById('appDate').textContent = new Date().toLocaleDateString();
+
+            // Hide form, show success
+            document.getElementById('whitelist').classList.remove('active');
+            document.getElementById('successPage').classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        // Player count
+async function fetchPlayerCount() {
+    const el = document.getElementById('playerCount');
+    if (!el) return;
+
+    try {
+        const response = await fetch("https://cfx.re/join/7b9lvk");
+        const data = await response.json();
+
+        const players = data.Data.clients;
+        el.textContent = players;
+
+    } catch (error) {
+        console.warn("Error:", error);
+        el.textContent = "0";
+    }
+}
+
+        // Init
+        window.addEventListener('load', () => {
+            createParticles();
+            fetchPlayerCount();
+            setInterval(fetchPlayerCount, 5000);
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
